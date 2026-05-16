@@ -1,0 +1,17 @@
+node_modules/
+.expo/
+.cxx/
+*.log
+.DS_Store
+android/build/
+android/app/build/
+android/.gradle/
+android/local.properties
+ios/Pods/
+ios/build/
+*.keystore
+!debug.keystore
+.env
+.metro-health-check*
+.bundle/
+vendor/
