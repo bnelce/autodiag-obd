@@ -1,4 +1,41 @@
 {
-  "name": "AutoDiagOBD",
-  "displayName": "AutoDiag OBD"
+  "expo": {
+    "name": "AutoDiag OBD",
+    "slug": "autodiag-obd",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "autodiagobd",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": false,
+    "android": {
+      "package": "com.bnelce.autodiagobd",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ],
+      "blockedPermissions": []
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 24,
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 34
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "REPLACE_AFTER_FIRST_EAS_INIT"
+      }
+    }
+  }
 }

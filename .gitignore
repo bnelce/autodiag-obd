@@ -15,3 +15,10 @@ ios/build/
 .metro-health-check*
 .bundle/
 vendor/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+*.tgz

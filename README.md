@@ -1,79 +1,99 @@
 # AutoDiag OBD
 
-App React Native (Android) para diagnóstico automotivo via scanner OBD2/ELM327 Bluetooth clássico (SPP).
+App **React Native + Expo (SDK 52)** para Android, focado em diagnóstico OBD2/ELM327 via Bluetooth clássico (SPP).
 
-MVP focado em **provar comunicação real** com o adaptador. Sem backend, sem PDF.
+MVP para **provar comunicação real** com o adaptador. Sem backend, sem PDF.
 
 ## Stack
 
-- React Native 0.76 (CLI, **não** Expo Go)
+- Expo SDK 52 (React Native 0.76)
 - TypeScript
-- React Navigation (native stack)
+- React Navigation v7 (native stack)
 - Zustand (estado global)
-- [`react-native-bluetooth-classic`](https://github.com/kenjdavidson/react-native-bluetooth-classic) (Bluetooth SPP)
-
-Bluetooth clássico exige módulo nativo → use **React Native CLI** ou **Expo Dev Client**. Não roda em Expo Go puro.
+- [`react-native-bluetooth-classic`](https://github.com/kenjdavidson/react-native-bluetooth-classic) (SPP)
+- **expo-dev-client** — Bluetooth clássico exige módulo nativo, então **não roda em Expo Go**. Você usa um **dev client custom** (APK gerado pelo EAS Build).
 
 ## Estrutura
 
 ```
 src/
-  app/navigation/        # Stack navigator + tipos
-  screens/               # Telas (Dashboard, Scanner, Terminal, ...)
-  components/            # AppCard, AppButton, StatusBadge, ...
+  app/navigation/        # Stack + tipos
+  screens/               # Dashboard, Scanner, Terminal, Diagnostic, LiveData, ErrorDetail, Checklist
+  components/            # AppCard, AppButton, StatusBadge, DtcCard, ...
   modules/
-    bluetooth/           # Serviço SPP (Permissões, conectar, enviar, ler)
-    obd/                 # Cliente ELM327, parsers (DTC, PID)
-    diagnostics/         # Regras (Ford EcoSport: P2135)
-  store/                 # Zustand: obd.store, vehicle.store
+    bluetooth/           # BluetoothService (SPP)
+    obd/                 # Elm327Client + parsers (DTC, PID)
+    diagnostics/         # Regras (Ford EcoSport P2135)
+  store/                 # Zustand: obd, vehicle
   theme/                 # colors, spacing, typography
 ```
 
-## Setup
+## Fluxo de teste no Redmi 12 (sem Android Studio, sem JDK 17 local)
 
-> Pré-requisitos: Node ≥ 18, JDK 17, Android SDK + Platform Tools, ANDROID_HOME definido. Veja https://reactnative.dev/docs/environment-setup → "React Native CLI Quickstart".
+Você vai compilar o APK no servidor da Expo (EAS Build) e instalar direto no celular.
 
-Este pacote contém **somente** o código de aplicação (`src/`, `App.tsx`, `index.js`) e o `AndroidManifest.xml` com as permissões. A pasta `android/` nativa precisa ser gerada uma vez:
+### 1) Instalar dependências locais (Mac)
 
 ```bash
-# 1) Gere um esqueleto RN com o mesmo nome
-npx @react-native-community/cli@latest init AutoDiagOBD --version 0.76.3 --skip-install
-
-# 2) Copie os arquivos deste projeto por cima do esqueleto:
-#    - App.tsx, index.js, app.json, package.json, tsconfig.json
-#    - src/, babel.config.js, metro.config.js
-#    - Substitua android/app/src/main/AndroidManifest.xml pelo nosso
-
-# 3) Instale dependências
-yarn        # ou npm install
-
-# 4) (Apenas para libs nativas) Linkagem é automática no autolinking do RN 0.76+
-
-# 5) Conecte o Redmi 12 via USB com depuração ativa
-adb devices
-
-# 6) Rode em modo debug
-npx react-native run-android
+npm install -g eas-cli
+cd autodiag-obd
+npm install
 ```
 
-### Rodando no Redmi 12
+> Não precisa de Android SDK nem JDK local. Só Node ≥ 18 e `eas-cli`.
 
-1. Em **Configurações → Sobre o telefone** toque 7x na versão MIUI para liberar **Opções do desenvolvedor**.
-2. Em **Opções do desenvolvedor** ative **Depuração USB** e **Instalar via USB**.
-3. Conecte o cabo, autorize a chave RSA no telefone.
-4. `adb devices` deve listar o aparelho.
-5. `npx react-native run-android` → o APK debug é instalado e o Metro inicia.
+### 2) Criar conta + logar no Expo
 
-Se o Metro não conectar pelo USB, rode `adb reverse tcp:8081 tcp:8081`.
+```bash
+npx expo login          # ou: eas login
+```
 
-## Permissões Android
+Conta grátis em https://expo.dev/signup.
 
-O `AndroidManifest.xml` declara:
+### 3) Configurar o projeto EAS
 
-- `BLUETOOTH`, `BLUETOOTH_ADMIN`, `ACCESS_FINE_LOCATION` (Android ≤ 11)
-- `BLUETOOTH_CONNECT`, `BLUETOOTH_SCAN` (Android 12+)
+```bash
+eas init
+# Quando perguntar, escolha "create new project".
+# Isso grava o projectId em app.json (substitui REPLACE_AFTER_FIRST_EAS_INIT).
+```
 
-`BluetoothService.requestPermissions()` solicita as runtime permissions adequadas pelo nível de API.
+### 4) Build do APK de desenvolvimento
+
+```bash
+eas build --platform android --profile development
+```
+
+- Roda na nuvem (~10–15 min).
+- No final você recebe um **link de APK** + QR code.
+
+### 5) Instalar no Redmi 12
+
+Duas opções:
+
+**a) Pelo celular** — abra o link no Chrome do Redmi, baixe o APK, autorize "Instalar fontes desconhecidas", instale.
+
+**b) Pelo Mac via adb** (se tiver) — `adb install autodiag-obd.apk`.
+
+### 6) Rodar Metro com hot reload
+
+No Mac:
+
+```bash
+npx expo start --dev-client
+```
+
+Abra o app no Redmi → ele se conecta ao Metro do Mac (mesma Wi-Fi). Mudanças no código fazem reload automático.
+
+### 7) Builds futuras
+
+Você só precisa de novo build EAS quando mexer em código nativo, permissões, dependências nativas ou versão do SDK. Mudanças em JS/TS recarregam pelo Metro.
+
+Para gerar o APK "final" pra alguém que não vai mexer no Metro:
+
+```bash
+eas build --platform android --profile preview
+```
 
 ## Pareando o ELM327 antes de usar
 
@@ -83,7 +103,16 @@ O app **não escaneia** dispositivos — apenas lista pareados. Antes do primeir
 2. Em **Configurações Bluetooth do Android**, pareie com o adaptador (PIN comum: `1234` ou `0000`).
 3. Abra o AutoDiag OBD → **Scanner** → o dispositivo aparece na lista → **Conectar**.
 
-## Fluxo recomendado
+## Permissões Android
+
+Declaradas em `app.json` em `expo.android.permissions`:
+
+- `BLUETOOTH`, `BLUETOOTH_ADMIN`, `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION` (Android ≤ 11)
+- `BLUETOOTH_CONNECT`, `BLUETOOTH_SCAN` (Android 12+)
+
+`BluetoothService.requestPermissions()` solicita as runtime permissions adequadas pelo nível de API.
+
+## Fluxo recomendado in-app
 
 1. **Dashboard** → veículo ativo + status do scanner.
 2. **Scanner** → permissões → conectar.
@@ -97,7 +126,7 @@ O app **não escaneia** dispositivos — apenas lista pareados. Antes do primeir
 
 `ATI`, `ATRV`, `ATZ`, `ATE0`, `ATL0`, `ATS0`, `ATH0`, `ATSP0`, `0100`, `0101`, `010C`, `0105`, `0111`, `03`, `04`.
 
-Todo comando é enviado com `\r` (terminator do ELM327). O cliente espera pelo prompt `>` antes de devolver a resposta.
+Todo comando é enviado com `\r`. Cliente espera pelo prompt `>` antes de devolver a resposta.
 
 ## Parsers implementados
 
@@ -108,28 +137,29 @@ Todo comando é enviado com `\r` (terminator do ELM327). O cliente espera pelo p
 | `0105` | temp = A − 40 |
 | `0111` | borboleta = A·100/255 (%) |
 | `010D` | velocidade = A (km/h) |
-| `03` | DTC parser tolerante a "43 01 21 35", "43 21 35", "43012135" |
-
-DTC parser cobre o caso real do EcoSport e é capaz de identificar **P2135** automaticamente.
+| `03` | DTC tolerante a `43 01 21 35`, `43 21 35`, `43012135` |
 
 ## Segurança operacional
 
-- Comando `04` (apagar códigos) **sempre** passa por modal de confirmação com aviso explícito.
-- Em nenhum momento o app fala em "resetar módulo" — apenas **apagar códigos de falha**.
-- Ações OBD ficam **bloqueadas** quando o scanner está desconectado.
+- Comando `04` (apagar códigos) **sempre** passa por modal de confirmação.
+- App fala em **"apagar códigos de falha"**, nunca "resetar módulo".
+- Ações OBD **bloqueadas** quando o scanner está desconectado.
 
 ## Limitações conhecidas
 
 - **Sem polling contínuo** no Live Data (MVP — leitura sob demanda).
 - **Sem persistência** de histórico (Zustand em memória).
 - **Sem descoberta** de dispositivos não pareados — pareie pelo Android primeiro.
-- ELM327 **clones** podem ter timing diferente; o cliente usa polling de 50ms com timeout de 4s (6s para `ATZ`).
-- Regras de diagnóstico **somente para Ford EcoSport 1.6 Sigma / código P2135** (extensível em `src/modules/diagnostics`).
-- App **somente Android** no MVP.
+- ELM327 clones podem ter timing diferente; cliente usa polling 50ms / timeout 4s (6s para `ATZ`).
+- Regras de diagnóstico **somente para EcoSport 1.6 Sigma / P2135** (extensível em `src/modules/diagnostics`).
+- Android-only no MVP.
 
-## Próximos passos sugeridos
+## Quando você terá que rodar `expo prebuild`
 
-- Polling no Live Data (gráficos).
-- Persistência de leituras (SQLite).
-- Suporte a mais DTCs e veículos.
-- Modo "tela escura" para uso na oficina (já é tema escuro, mas dá pra escurecer mais).
+Se decidir abandonar EAS e buildar localmente, precisará:
+
+```bash
+npx expo prebuild --platform android --clean
+```
+
+Isso gera a pasta `android/` nativa. Aí precisa de JDK 17 + Android SDK localmente (caminho que evitamos com EAS).
