@@ -9,7 +9,6 @@
     "newArchEnabled": false,
     "android": {
       "package": "com.bnelce.autodiagobd",
-      "versionCode": 1,
       "permissions": [
         "android.permission.BLUETOOTH",
         "android.permission.BLUETOOTH_ADMIN",
@@ -30,12 +29,14 @@
             "targetSdkVersion": 34
           }
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "extra": {
       "eas": {
-        "projectId": "REPLACE_AFTER_FIRST_EAS_INIT"
+        "projectId": "5b396b2a-8808-4bbb-970e-a76125f7fd51"
       }
-    }
+    },
+    "owner": "bnelce"
   }
 }
